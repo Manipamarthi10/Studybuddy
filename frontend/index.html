@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>StudyBuddy AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --bg:#0d0d0d;--bg2:#141414;--bg3:#1a1a1a;--bg4:#222;
+    --border:#2a2a2a;--border2:#333;
+    --green:#00e5a0;--green-dim:#00b87d;--green-glow:rgba(0,229,160,0.12);
+    --text:#f0f0f0;--text2:#aaa;--text3:#666;
+    --amber:#f5a623;--red:#ff5555;--blue:#4e9eff;
+  }
+  html,body{height:100%;font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);overflow:hidden}
+  
+  /* Layout */
+  .app{display:flex;height:100vh}
+  
+  /* Sidebar */
+  .sidebar{width:220px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
+  .logo{padding:20px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+  .logo-icon{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,var(--green),var(--green-dim));display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+  .logo-text{font-weight:700;font-size:15px;color:var(--text)}
+  .logo-sub{font-size:10px;color:var(--text3);margin-top:1px}
+  .nav{flex:1;padding:10px 8px;display:flex;flex-direction:column;gap:2px}
+  .nav-btn{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;border:none;background:none;color:var(--text2);font-size:13px;font-family:'Inter',sans-serif;cursor:pointer;transition:all .15s;text-align:left;width:100%}
+  .nav-btn:hover{background:var(--bg3);color:var(--text)}
+  .nav-btn.active{background:var(--green-glow);color:var(--green);border:1px solid rgba(0,229,160,0.2)}
+  .nav-btn svg{flex-shrink:0;opacity:.7}
+  .nav-btn.active svg{opacity:1}
+  .sidebar-footer{padding:12px 16px;border-top:1px solid var(--border)}
+  .doc-count{font-size:11px;color:var(--text3);display:flex;align-items:center;gap:6px}
+  
+  /* Main */
+  .main{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg)}
+  
+  /* Page header */
+  .page-header{padding:16px 24px;border-bottom:1px solid var(--border);background:var(--bg2);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+  .page-title{font-size:16px;font-weight:600;color:var(--text)}
+  .page-sub{font-size:12px;color:var(--text3);margin-top:2px}
+  .mode-pills{display:flex;gap:6px}
+  .pill{padding:4px 12px;border-radius:20px;font-size:11px;font-weight:500;cursor:pointer;border:1px solid var(--border2);background:none;color:var(--text3);font-family:'Inter',sans-serif;transition:all .15s;text-transform:capitalize}
+  .pill:hover{color:var(--text);border-color:var(--text3)}
+  .pill.active{background:var(--green);color:#000;border-color:var(--green)}
+  
+  /* Chat */
+  .chat-body{flex:1;overflow-y:auto;padding:20px 24px;display:flex;flex-direction:column;gap:16px}
+  .chat-body::-webkit-scrollbar{width:4px}
+  .chat-body::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+  .msg{display:flex;gap:10px;max-width:780px;animation:fadeUp .3s ease}
+  .msg.user{align-self:flex-end;flex-direction:row-reverse}
+  .avatar{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:2px}
+  .avatar.ai{background:linear-gradient(135deg,var(--green),var(--green-dim));color:#000}
+  .avatar.user{background:var(--bg4);color:var(--text2);border:1px solid var(--border2)}
+  .bubble{padding:12px 16px;border-radius:12px;font-size:13.5px;line-height:1.65;max-width:640px}
+  .bubble.ai{background:var(--bg3);border:1px solid var(--border);border-top-left-radius:4px;color:var(--text)}
+  .bubble.user{background:rgba(0,229,160,0.1);border:1px solid rgba(0,229,160,0.25);border-top-right-radius:4px;color:var(--text)}
+  .agent-tag{display:inline-flex;align-items:center;gap:4px;margin-top:8px;padding:2px 8px;border-radius:4px;background:rgba(0,229,160,0.08);border:1px solid rgba(0,229,160,0.15);font-size:10px;color:var(--green);font-weight:500}
+  .typing{display:flex;gap:4px;align-items:center;padding:8px 0}
+  .dot{width:6px;height:6px;border-radius:50%;background:var(--text3);animation:bounce 1.2s infinite}
+  .dot:nth-child(2){animation-delay:.2s}
+  .dot:nth-child(3){animation-delay:.4s}
+  
+  /* Suggestions */
+  .suggestions{padding:0 24px 12px;display:flex;gap:8px;flex-wrap:wrap}
+  .suggest-chip{padding:6px 14px;border-radius:20px;font-size:12px;border:1px solid var(--border2);background:none;color:var(--text3);cursor:pointer;font-family:'Inter',sans-serif;transition:all .15s}
+  .suggest-chip:hover{border-color:var(--green);color:var(--green);background:var(--green-glow)}
+  
+  /* Input bar */
+  .input-bar{padding:16px 24px;border-top:1px solid var(--border);background:var(--bg2);display:flex;gap:10px;align-items:flex-end}
+  .input-wrap{flex:1;background:var(--bg3);border:1px solid var(--border2);border-radius:10px;display:flex;align-items:center;transition:border-color .15s;padding:0 12px}
+  .input-wrap:focus-within{border-color:rgba(0,229,160,0.4)}
+  .chat-input{flex:1;background:none;border:none;outline:none;color:var(--text);font-size:13.5px;font-family:'Inter',sans-serif;padding:12px 0;resize:none;max-height:100px}
+  .chat-input::placeholder{color:var(--text3)}
+  .send-btn{width:38px;height:38px;border-radius:8px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0}
+  .send-btn.active{background:var(--green)}
+  .send-btn.inactive{background:var(--bg4);cursor:not-allowed}
+  
+  /* Content pages */
+  .page{flex:1;overflow-y:auto;padding:28px 32px}
+  .page::-webkit-scrollbar{width:4px}
+  .page::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+  .card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:24px;margin-bottom:16px}
+  .card-title{font-size:15px;font-weight:600;margin-bottom:16px;color:var(--text)}
+  .label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px}
+  .input-field{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:10px 14px;color:var(--text);font-size:13.5px;font-family:'Inter',sans-serif;outline:none;transition:border-color .15s}
+  .input-field:focus{border-color:rgba(0,229,160,0.4)}
+  .input-field::placeholder{color:var(--text3)}
+  .btn-row{display:flex;gap:8px}
+  .btn{padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;font-family:'Inter',sans-serif;cursor:pointer;border:none;transition:all .15s}
+  .btn-primary{background:var(--green);color:#000}
+  .btn-primary:hover{opacity:.9}
+  .btn-primary:disabled{opacity:.4;cursor:not-allowed}
+  .btn-ghost{background:var(--bg3);color:var(--text2);border:1px solid var(--border2)}
+  .btn-ghost:hover{border-color:var(--text3);color:var(--text)}
+  .btn-full{width:100%;padding:12px}
+  .diff-row{display:flex;gap:8px}
+  .diff-btn{flex:1;padding:9px;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border2);background:none;color:var(--text3);font-family:'Inter',sans-serif;transition:all .15s;text-transform:capitalize}
+  .diff-btn.active{background:var(--green);color:#000;border-color:var(--green)}
+  .topic-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .topic-btn{padding:11px;border-radius:8px;font-size:12.5px;font-weight:500;cursor:pointer;border:1px solid var(--border2);background:none;color:var(--text3);font-family:'Inter',sans-serif;transition:all .15s;text-align:center}
+  .topic-btn.active{background:var(--green);color:#000;border-color:var(--green)}
+  .stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+  .stat{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center}
+  .stat-val{font-size:22px;font-weight:700;color:var(--green)}
+  .stat-label{font-size:11px;color:var(--text3);margin-top:4px}
+  
+  /* Quiz */
+  .progress-bar{height:3px;background:var(--bg3);border-radius:2px;margin-bottom:20px;overflow:hidden}
+  .progress-fill{height:100%;background:var(--green);border-radius:2px;transition:width .4s ease}
+  .question-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:14px}
+  .question-text{font-size:15px;font-weight:500;line-height:1.6;color:var(--text)}
+  .options{display:flex;flex-direction:column;gap:8px;margin-top:16px}
+  .option{padding:12px 16px;border-radius:10px;border:1px solid var(--border2);background:var(--bg3);color:var(--text2);font-size:13.5px;cursor:pointer;transition:all .15s;text-align:left;font-family:'Inter',sans-serif;display:flex;justify-content:space-between;align-items:center}
+  .option:hover:not(:disabled){border-color:rgba(0,229,160,0.3);color:var(--text)}
+  .option.correct{background:rgba(0,229,160,0.1);border-color:var(--green);color:var(--text)}
+  .option.wrong{background:rgba(255,85,85,0.08);border-color:var(--red);color:var(--text)}
+  .explanation{background:rgba(0,229,160,0.06);border:1px solid rgba(0,229,160,0.2);border-radius:10px;padding:14px;font-size:13px;color:var(--text2);line-height:1.6;margin-top:12px}
+  .explanation-title{color:var(--green);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+  .result-score{font-size:64px;font-weight:800;text-align:center;padding:20px 0}
+  .result-rec{background:rgba(0,229,160,0.06);border:1px solid rgba(0,229,160,0.2);border-radius:10px;padding:14px;font-size:13px;color:var(--text2);line-height:1.6}
+  
+  /* Interview */
+  .interview-q{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:14px}
+  .interviewer-tag{font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+  .interviewer-tag::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block}
+  .q-text{font-size:15px;font-weight:500;line-height:1.65;color:var(--text)}
+  .answer-area{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:14px;color:var(--text);font-size:13.5px;font-family:'Inter',sans-serif;resize:vertical;min-height:140px;outline:none;transition:border-color .15s;line-height:1.6}
+  .answer-area:focus{border-color:rgba(0,229,160,0.4)}
+  .answer-area::placeholder{color:var(--text3)}
+  .score-badge{display:flex;align-items:baseline;gap:3px}
+  .score-num{font-size:36px;font-weight:800}
+  .score-denom{font-size:16px;color:var(--text3);font-weight:400}
+  .feedback-card{background:rgba(0,229,160,0.05);border:1px solid rgba(0,229,160,0.2);border-radius:14px;padding:20px}
+  .feedback-section{margin-bottom:16px}
+  .feedback-section:last-child{margin-bottom:0}
+  .feedback-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);margin-bottom:8px}
+  .model-answer{background:var(--bg3);border-radius:8px;padding:12px;font-size:13px;color:var(--text2);line-height:1.65}
+  .tip-item{display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--text2);margin-bottom:6px}
+  .tip-arrow{color:var(--green);flex-shrink:0;margin-top:1px}
+  .follow-up{background:rgba(245,166,35,0.08);border:1px solid rgba(245,166,35,0.2);border-radius:10px;padding:14px;margin-top:12px}
+  .follow-up-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--amber);margin-bottom:6px}
+  
+  /* Documents */
+  .upload-zone{border:2px dashed var(--border2);border-radius:14px;padding:40px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:20px}
+  .upload-zone:hover{border-color:var(--green);background:var(--green-glow)}
+  .upload-icon{font-size:36px;margin-bottom:12px}
+  .upload-title{font-size:15px;font-weight:500;color:var(--text);margin-bottom:4px}
+  .upload-sub{font-size:12px;color:var(--text3)}
+  .doc-list{display:flex;flex-direction:column;gap:8px}
+  .doc-item{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;transition:border-color .15s}
+  .doc-item:hover{border-color:var(--border2)}
+  .doc-info{display:flex;align-items:center;gap:12px}
+  .doc-icon{width:36px;height:36px;border-radius:8px;background:var(--bg3);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+  .doc-name{font-size:13.5px;font-weight:500;color:var(--text)}
+  .doc-meta{font-size:11px;color:var(--text3);margin-top:2px}
+  .delete-btn{background:none;border:none;color:var(--text3);cursor:pointer;padding:6px;border-radius:6px;transition:all .15s;display:flex}
+  .delete-btn:hover{color:var(--red);background:rgba(255,85,85,0.1)}
+  
+  /* Loading spinner */
+  .spinner{width:36px;height:36px;border:2px solid var(--border2);border-top-color:var(--green);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto}
+  .loading-wrap{display:flex;flex-direction:column;align-items:center;gap:12px;padding:60px 0}
+  .loading-text{font-size:13px;color:var(--text3)}
+  
+  /* Markdown-ish rendering */
+  .md h2{font-size:15px;font-weight:700;color:var(--text);margin:12px 0 6px}
+  .md h3{font-size:13.5px;font-weight:600;color:var(--text);margin:10px 0 4px}
+  .md p{margin:4px 0;color:var(--text2);font-size:13.5px;line-height:1.65}
+  .md strong{color:var(--text);font-weight:600}
+  .md ul,.md ol{padding-left:18px;margin:6px 0}
+  .md li{font-size:13.5px;color:var(--text2);line-height:1.65;margin:3px 0}
+  .md blockquote{border-left:2px solid var(--green);padding:6px 12px;margin:10px 0;background:rgba(0,229,160,0.05);border-radius:0 6px 6px 0}
+  .md blockquote p{color:var(--text3);font-size:12.5px;font-style:italic}
+  .md code{font-family:'JetBrains Mono',monospace;font-size:12px;background:var(--bg3);padding:1px 5px;border-radius:4px;color:var(--green)}
+  
+  @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes bounce{0%,80%,100%{transform:translateY(0);opacity:.4}40%{transform:translateY(-5px);opacity:1}}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  
+  select.input-field{-webkit-appearance:none;cursor:pointer}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="logo-icon">🧠</div>
+      <div>
+        <div class="logo-text">StudyBuddy AI</div>
+        <div class="logo-sub">Personal Second Brain</div>
+      </div>
+    </div>
+    <nav class="nav" id="nav">
+      <button class="nav-btn active" onclick="switchTab('chat',this)">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        AI Tutor
+      </button>
+      <button class="nav-btn" onclick="switchTab('quiz',this)">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        Quiz Generator
+      </button>
+      <button class="nav-btn" onclick="switchTab('interview',this)">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm10 0v6m3-3h-6"/></svg>
+        Interview Prep
+      </button>
+      <button class="nav-btn" onclick="switchTab('docs',this)">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Documents
+      </button>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="doc-count">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>
+        <span id="doc-count-text">2 docs uploaded</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+
+    <!-- ── CHAT ─────────────────────────────────────────── -->
+    <div id="tab-chat" style="display:flex;flex-direction:column;flex:1;overflow:hidden">
+      <div class="page-header">
+        <div>
+          <div class="page-title">AI Tutor</div>
+          <div class="page-sub">Powered by Llama 3 · RAG from your notes</div>
+        </div>
+        <div class="mode-pills">
+          <button class="pill active" onclick="setMode('auto',this)">auto</button>
+          <button class="pill" onclick="setMode('tutor',this)">tutor</button>
+          <button class="pill" onclick="setMode('revision',this)">revision</button>
+          <button class="pill" onclick="setMode('planner',this)">planner</button>
+        </div>
+      </div>
+      <div class="chat-body" id="chat-body">
+        <div class="msg">
+          <div class="avatar ai">AI</div>
+          <div class="bubble ai">
+            <div class="md">
+              <h2>👋 Welcome to StudyBuddy AI!</h2>
+              <p>I'm your personal AI tutor. Here's what I can do:</p>
+              <ul>
+                <li><strong>Answer questions</strong> from your uploaded notes using RAG</li>
+                <li><strong>Generate quizzes</strong> to test your knowledge</li>
+                <li><strong>Simulate interviews</strong> for placement prep</li>
+                <li><strong>Create revision summaries</strong> and study plans</li>
+              </ul>
+              <p>Upload your notes in the Documents tab, then ask me anything!</p>
+            </div>
+            <div class="agent-tag">✦ tutor agent</div>
+          </div>
+        </div>
+      </div>
+      <div class="suggestions" id="suggestions">
+        <button class="suggest-chip" onclick="fillInput('Explain deadlock in OS')">Explain deadlock</button>
+        <button class="suggest-chip" onclick="fillInput('Summarize my uploaded notes')">Summarize my notes</button>
+        <button class="suggest-chip" onclick="fillInput('What is virtual memory?')">Virtual memory?</button>
+        <button class="suggest-chip" onclick="fillInput('Create a 7-day study plan for my exam')">Study plan</button>
+      </div>
+      <div class="input-bar">
+        <div class="input-wrap">
+          <textarea class="chat-input" id="chat-input" rows="1" placeholder="Ask anything from your notes... (Enter to send)"
+            onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+        </div>
+        <button class="send-btn inactive" id="send-btn" onclick="sendMessage()">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- ── QUIZ ─────────────────────────────────────────── -->
+    <div id="tab-quiz" style="display:none;flex:1;overflow:hidden;flex-direction:column">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Quiz Generator</div>
+          <div class="page-sub">AI-generated MCQs from your uploaded notes</div>
+        </div>
+      </div>
+      <div class="page" id="quiz-content">
+        <div class="stats-row">
+          <div class="stat"><div class="stat-val">12</div><div class="stat-label">Quizzes Taken</div></div>
+          <div class="stat"><div class="stat-val">74%</div><div class="stat-label">Avg Score</div></div>
+          <div class="stat"><div class="stat-val">2</div><div class="stat-label">Weak Topics</div></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Generate a New Quiz</div>
+          <div class="label">Topic</div>
+          <input class="input-field" id="quiz-topic" placeholder="e.g. Operating Systems, Deadlocks, SQL Joins..." style="margin-bottom:14px"/>
+          <div class="label">Difficulty</div>
+          <div class="diff-row" style="margin-bottom:14px">
+            <button class="diff-btn" onclick="setDiff('easy',this)">Easy</button>
+            <button class="diff-btn active" onclick="setDiff('medium',this)">Medium</button>
+            <button class="diff-btn" onclick="setDiff('hard',this)">Hard</button>
+          </div>
+          <button class="btn btn-primary btn-full" onclick="startQuiz()">Generate Quiz from My Notes →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── INTERVIEW ────────────────────────────────────── -->
+    <div id="tab-interview" style="display:none;flex:1;overflow:hidden;flex-direction:column">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Interview Simulator</div>
+          <div class="page-sub">Mock technical interviews with AI feedback</div>
+        </div>
+      </div>
+      <div class="page" id="interview-content">
+        <div class="stats-row">
+          <div class="stat"><div class="stat-val">8</div><div class="stat-label">Sessions Done</div></div>
+          <div class="stat"><div class="stat-val">7.2</div><div class="stat-label">Avg Score /10</div></div>
+          <div class="stat"><div class="stat-val">DBMS</div><div class="stat-label">Best Topic</div></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Start Mock Interview</div>
+          <div class="label">Topic</div>
+          <div class="topic-grid" style="margin-bottom:14px" id="topic-grid">
+            <button class="topic-btn active" onclick="setTopic('os',this)">Operating Systems</button>
+            <button class="topic-btn" onclick="setTopic('dsa',this)">DSA & Algorithms</button>
+            <button class="topic-btn" onclick="setTopic('dbms',this)">DBMS & SQL</button>
+            <button class="topic-btn" onclick="setTopic('system_design',this)">System Design</button>
+          </div>
+          <div class="label">Difficulty</div>
+          <div class="diff-row" style="margin-bottom:14px" id="int-diff-row">
+            <button class="diff-btn" onclick="setIntDiff('easy',this)">Easy</button>
+            <button class="diff-btn active" onclick="setIntDiff('medium',this)">Medium</button>
+            <button class="diff-btn" onclick="setIntDiff('hard',this)">Hard</button>
+          </div>
+          <button class="btn btn-primary btn-full" onclick="startInterview()">Start Interview →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── DOCUMENTS ─────────────────────────────────────── -->
+    <div id="tab-docs" style="display:none;flex:1;overflow:hidden;flex-direction:column">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Knowledge Base</div>
+          <div class="page-sub">Upload documents — they become searchable via RAG</div>
+        </div>
+      </div>
+      <div class="page">
+        <div class="upload-zone" onclick="document.getElementById('file-input').click()">
+          <input type="file" id="file-input" accept=".pdf,.txt,.md,.docx" style="display:none" onchange="uploadFile(this)"/>
+          <div class="upload-icon">📄</div>
+          <div class="upload-title">Drop files or click to upload</div>
+          <div class="upload-sub" style="margin-bottom:12px">PDF, DOCX, TXT, MD — up to 50MB</div>
+          <select class="input-field" id="upload-subject" style="width:auto;display:inline-block;padding:6px 14px" onclick="event.stopPropagation()">
+            <option>General</option>
+            <option>Operating Systems</option>
+            <option>DBMS</option>
+            <option>DSA</option>
+            <option>Networks</option>
+            <option>System Design</option>
+            <option>Maths</option>
+          </select>
+        </div>
+        <div>
+          <div class="label" style="margin-bottom:10px">Your Documents</div>
+          <div class="doc-list" id="doc-list">
+            <div class="doc-item">
+              <div class="doc-info">
+                <div class="doc-icon">📕</div>
+                <div>
+                  <div class="doc-name">OS_Lecture_Notes.pdf</div>
+                  <div class="doc-meta">Operating Systems · 42 chunks indexed</div>
+                </div>
+              </div>
+              <button class="delete-btn" onclick="deleteDoc(this)">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              </button>
+            </div>
+            <div class="doc-item">
+              <div class="doc-info">
+                <div class="doc-icon">📗</div>
+                <div>
+                  <div class="doc-name">DBMS_Unit3.pdf</div>
+                  <div class="doc-meta">DBMS · 28 chunks indexed</div>
+                </div>
+              </div>
+              <button class="delete-btn" onclick="deleteDoc(this)">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+const API = 'http://localhost:8000';
+let token = null; // Set this after Supabase auth
+let currentMode = 'auto';
+let quizDiff = 'medium';
+let intTopic = 'os';
+let intDiff = 'medium';
+let chatHistory = [];
+let docs = 2;
+
+// ── Tab switching ────────────────────────────────────────────
+function switchTab(tab, btn) {
+  ['chat','quiz','interview','docs'].forEach(t => {
+    const el = document.getElementById('tab-'+t);
+    el.style.display = 'none';
+  });
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  const el = document.getElementById('tab-'+tab);
+  el.style.display = (tab==='chat') ? 'flex' : 'flex';
+  el.style.flexDirection = 'column';
+  btn.classList.add('active');
+}
+
+// ── Chat ─────────────────────────────────────────────────────
+function setMode(m, btn) {
+  currentMode = m;
+  document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function fillInput(text) {
+  const inp = document.getElementById('chat-input');
+  inp.value = text;
+  updateSendBtn();
+  inp.focus();
+  document.getElementById('suggestions').style.display = 'none';
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+  updateSendBtn();
+}
+
+function updateSendBtn() {
+  const v = document.getElementById('chat-input').value.trim();
+  const btn = document.getElementById('send-btn');
+  btn.className = 'send-btn ' + (v ? 'active' : 'inactive');
+  btn.style.background = v ? 'var(--green)' : 'var(--bg4)';
+}
+
+function appendMsg(role, content, agent='') {
+  const body = document.getElementById('chat-body');
+  const div = document.createElement('div');
+  div.className = 'msg' + (role==='user' ? ' user' : '');
+  const av = `<div class="avatar ${role}">${role==='user'?'You':'AI'}</div>`;
+  const bubble = role==='user'
+    ? `<div class="bubble user">${escHtml(content)}</div>`
+    : `<div class="bubble ai"><div class="md">${renderMd(content)}</div>${agent?`<div class="agent-tag">✦ ${agent} agent</div>`:''}</div>`;
+  div.innerHTML = role==='user' ? bubble+av : av+bubble;
+  body.appendChild(div);
+  body.scrollTop = body.scrollHeight;
+}
+
+function appendTyping() {
+  const body = document.getElementById('chat-body');
+  const div = document.createElement('div');
+  div.className = 'msg'; div.id = 'typing-indicator';
+  div.innerHTML = `<div class="avatar ai">AI</div><div class="bubble ai"><div class="typing"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div>`;
+  body.appendChild(div);
+  body.scrollTop = body.scrollHeight;
+}
+
+function removeTyping() {
+  const t = document.getElementById('typing-indicator');
+  if (t) t.remove();
+}
+
+async function sendMessage() {
+  const inp = document.getElementById('chat-input');
+  const msg = inp.value.trim();
+  if (!msg) return;
+  inp.value = ''; inp.style.height='auto'; updateSendBtn();
+  document.getElementById('suggestions').style.display = 'none';
+  appendMsg('user', msg);
+  appendTyping();
+
+  try {
+    const res = await fetch(API+'/api/chat/', {
+      method:'POST',
+      headers:{'Content-Type':'application/json', ...(token?{'Authorization':'Bearer '+token}:{})},
+      body: JSON.stringify({message:msg, chat_history:chatHistory, mode:currentMode})
+    });
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+    removeTyping();
+    appendMsg('assistant', data.response, data.agent);
+    chatHistory.push({role:'user',content:msg},{role:'assistant',content:data.response});
+    if (chatHistory.length > 12) chatHistory = chatHistory.slice(-12);
+  } catch(err) {
+    removeTyping();
+    appendMsg('assistant', '⚠️ Could not connect to backend. Make sure `uvicorn main:app --reload` is running on port 8000.', 'error');
+  }
+}
+
+// ── Quiz ─────────────────────────────────────────────────────
+let quizQuestions = [];
+let quizAnswers = {};
+let currentQ = 0;
+
+function setDiff(d, btn) {
+  quizDiff = d;
+  document.querySelectorAll('#quiz-content .diff-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+async function startQuiz() {
+  const topic = document.getElementById('quiz-topic').value.trim() || 'Operating Systems';
+  const content = document.getElementById('quiz-content');
+  content.innerHTML = `<div class="loading-wrap"><div class="spinner"></div><div class="loading-text">Generating quiz from your notes...</div></div>`;
+
+  try {
+    const res = await fetch(API+'/api/quiz/generate', {
+      method:'POST',
+      headers:{'Content-Type':'application/json', ...(token?{'Authorization':'Bearer '+token}:{})},
+      body: JSON.stringify({topic, difficulty:quizDiff, num_questions:5, subject:null})
+    });
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    quizQuestions = data.questions;
+    quizAnswers = {};
+    currentQ = 0;
+    renderQuestion();
+  } catch {
+    content.innerHTML = `<div class="card" style="text-align:center;color:var(--text3)">
+      <p style="margin-bottom:12px">⚠️ Backend not reachable. Showing demo quiz.</p>
+    </div>`;
+    quizQuestions = DEMO_QUIZ;
+    quizAnswers = {};
+    currentQ = 0;
+    renderQuestion();
+  }
+}
+
+const DEMO_QUIZ = [
+  {id:'0',question:'Which condition is NOT required for a deadlock to occur?',options:['A) Mutual Exclusion','B) Hold and Wait','C) Preemption','D) Circular Wait'],answer:'C',explanation:'Preemption (forcibly taking resources) actually PREVENTS deadlock. The four necessary conditions are: Mutual Exclusion, Hold & Wait, No Preemption, and Circular Wait.'},
+  {id:'1',question:"In the Banker's Algorithm, a 'safe state' means:",options:['A) No processes are waiting','B) All processes can finish in some sequence','C) Resources are distributed equally','D) No deadlock exists currently'],answer:'B',explanation:"A safe state guarantees there's at least one execution sequence where all processes can complete without deadlock."},
+  {id:'2',question:'Which scheduling algorithm can cause starvation?',options:['A) Round Robin','B) FCFS','C) Priority Scheduling','D) SJF non-preemptive'],answer:'C',explanation:'Priority Scheduling starves low-priority processes if high-priority processes keep arriving.'},
+  {id:'3',question:'Virtual memory primarily allows:',options:['A) Faster CPU execution','B) Programs to exceed physical RAM size','C) Reduced disk I/O','D) Elimination of fragmentation'],answer:'B',explanation:'Virtual memory lets programs use more memory than physically available by using disk space as an extension.'},
+  {id:'4',question:'Which page replacement algorithm suffers from Beladys anomaly?',options:["A) LRU","B) Optimal","C) FIFO","D) Clock"],answer:'C',explanation:"FIFO can suffer from Belady's anomaly — adding more frames can actually increase page faults."},
+];
+
+function renderQuestion() {
+  const content = document.getElementById('quiz-content');
+  const q = quizQuestions[currentQ];
+  const prog = ((currentQ)/quizQuestions.length*100);
+  content.innerHTML = `
+    <div style="margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:12px;color:var(--text3)">Question ${currentQ+1} of ${quizQuestions.length}</span>
+      <span style="font-size:11px;color:var(--green);font-weight:600;text-transform:uppercase">${quizDiff}</span>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" style="width:${prog}%"></div></div>
+    <div class="question-card"><div class="question-text">${escHtml(q.question)}</div>
+      <div class="options" id="options-wrap">
+        ${q.options.map(opt=>`<button class="option" onclick="selectAnswer('${q.id}','${opt[0]}',this,'${q.answer}')">${escHtml(opt)}</button>`).join('')}
+      </div>
+      <div id="explanation-wrap"></div>
+    </div>
+    <div id="next-wrap"></div>`;
+}
+
+function selectAnswer(qId, ans, btn, correct) {
+  if (quizAnswers[qId]) return;
+  quizAnswers[qId] = ans;
+  const opts = document.querySelectorAll('.option');
+  opts.forEach(o => {
+    o.disabled = true;
+    const letter = o.textContent.trim()[0];
+    if (letter === correct) { o.classList.add('correct'); o.innerHTML += ' <span style="color:var(--green)">✓</span>'; }
+    else if (letter === ans && ans !== correct) { o.classList.add('wrong'); o.innerHTML += ' <span style="color:var(--red)">✗</span>'; }
+  });
+  const q = quizQuestions[currentQ];
+  document.getElementById('explanation-wrap').innerHTML = `
+    <div class="explanation"><div class="explanation-title">Explanation</div>${escHtml(q.explanation)}</div>`;
+  document.getElementById('next-wrap').innerHTML = `
+    <button class="btn btn-primary btn-full" style="margin-top:8px" onclick="nextQuestion()">
+      ${currentQ<quizQuestions.length-1?'Next Question →':'See Results →'}
+    </button>`;
+}
+
+function nextQuestion() {
+  if (currentQ < quizQuestions.length-1) {
+    currentQ++;
+    renderQuestion();
+  } else {
+    showResult();
+  }
+}
+
+function showResult() {
+  const correct = quizQuestions.filter(q=>quizAnswers[q.id]?.toUpperCase()===q.answer).length;
+  const score = Math.round(correct/quizQuestions.length*100);
+  const color = score>=80?'var(--green)':score>=60?'var(--amber)':'var(--red)';
+  const rec = score>=80?'🎉 Excellent! You have mastered this topic. Try a harder difficulty!':
+    score>=60?`Good progress! Review the explanations for missed questions and retry.`:
+    `⚠️ Weak area detected. Recommended: 2-hour focused revision session + retry.`;
+  document.getElementById('quiz-content').innerHTML = `
+    <div class="card" style="text-align:center">
+      <div class="result-score" style="color:${color}">${score}%</div>
+      <div style="color:var(--text3);margin-bottom:20px">${correct} / ${quizQuestions.length} correct</div>
+      <div class="result-rec">${rec}</div>
+    </div>
+    <button class="btn btn-primary btn-full" onclick="resetQuiz()">Try Another Quiz</button>`;
+}
+
+function resetQuiz() {
+  document.getElementById('quiz-content').innerHTML = `
+    <div class="stats-row">
+      <div class="stat"><div class="stat-val">12</div><div class="stat-label">Quizzes Taken</div></div>
+      <div class="stat"><div class="stat-val">74%</div><div class="stat-label">Avg Score</div></div>
+      <div class="stat"><div class="stat-val">2</div><div class="stat-label">Weak Topics</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Generate a New Quiz</div>
+      <div class="label">Topic</div>
+      <input class="input-field" id="quiz-topic" placeholder="e.g. Operating Systems, Deadlocks, SQL Joins..." style="margin-bottom:14px"/>
+      <div class="label">Difficulty</div>
+      <div class="diff-row" style="margin-bottom:14px">
+        <button class="diff-btn" onclick="setDiff('easy',this)">Easy</button>
+        <button class="diff-btn active" onclick="setDiff('medium',this)">Medium</button>
+        <button class="diff-btn" onclick="setDiff('hard',this)">Hard</button>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="startQuiz()">Generate Quiz from My Notes →</button>
+    </div>`;
+}
+
+// ── Interview ─────────────────────────────────────────────────
+const INT_QS = {
+  os:['Explain the difference between a process and a thread. When would you use one over the other?','How does virtual memory work? Walk me through what happens during a page fault.','What is the difference between mutex and semaphore? Give a real-world use case.'],
+  dsa:['Given a sorted rotated array, find a target in O(log n) time. Code it.','Design an LRU Cache with O(1) get and put. Which data structures would you use?','Explain dynamic programming vs memoization with a concrete example.'],
+  dbms:['What is the difference between ACID and BASE properties in databases?','Explain database indexing. What types exist and when would you use each?','How would you design a schema for a social media platform like Twitter?'],
+  system_design:['Design a URL shortening service like bit.ly handling 100M URLs.','How would you design a distributed cache? Discuss trade-offs.','Walk me through designing a real-time notification system for 10M users.'],
+};
+
+let intSession = {id:'', topic:'os', qIndex:0};
+
+function setTopic(t, btn) {
+  intTopic = t;
+  document.querySelectorAll('.topic-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function setIntDiff(d, btn) {
+  intDiff = d;
+  document.querySelectorAll('#int-diff-row .diff-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+async function startInterview() {
+  const content = document.getElementById('interview-content');
+  content.innerHTML = `<div class="loading-wrap" style="padding:40px 0"><div class="spinner"></div><div class="loading-text">Preparing your interview...</div></div>`;
+  intSession = {id:'session-'+Date.now(), topic:intTopic, qIndex:0};
+  await new Promise(r=>setTimeout(r,1000));
+
+  try {
+    const res = await fetch(API+'/api/interview/start',{
+      method:'POST',
+      headers:{'Content-Type':'application/json',...(token?{'Authorization':'Bearer '+token}:{})},
+      body:JSON.stringify({topic:intTopic,difficulty:intDiff})
+    });
+    const data = await res.json();
+    renderInterviewQ(data.question, data.hints||[]);
+  } catch {
+    const qs = INT_QS[intTopic]||INT_QS.os;
+    renderInterviewQ(qs[0],[]);
+  }
+}
+
+function renderInterviewQ(question, hints) {
+  const content = document.getElementById('interview-content');
+  const qs = INT_QS[intTopic]||INT_QS.os;
+  const total = qs.length;
+  content.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <span style="font-size:12px;color:var(--text3)">Question ${intSession.qIndex+1} of ${total}</span>
+      <span style="font-size:11px;color:var(--green);font-weight:600;text-transform:uppercase">${intTopic.replace('_',' ')} · ${intDiff}</span>
+    </div>
+    <div class="interview-q">
+      <div class="interviewer-tag">Interviewer</div>
+      <div class="q-text">${escHtml(question)}</div>
+      ${hints.length?`<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">${hints.map(h=>`<span style="font-size:11px;padding:3px 10px;border-radius:4px;background:rgba(0,229,160,0.08);color:var(--green);border:1px solid rgba(0,229,160,0.15)">💡 ${escHtml(h)}</span>`).join('')}</div>`:''}
+    </div>
+    <textarea class="answer-area" id="int-answer" placeholder="Type your answer here... Be thorough, explain your reasoning, mention trade-offs."></textarea>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button class="btn btn-primary" style="flex:1;padding:12px" onclick="submitAnswer('${escHtml(question)}')">Submit Answer →</button>
+      <button class="btn btn-ghost" onclick="resetInterview()">End</button>
+    </div>`;
+}
+
+async function submitAnswer(question) {
+  const answer = document.getElementById('int-answer').value.trim();
+  if (!answer) return;
+  const content = document.getElementById('interview-content');
+  content.innerHTML = `<div class="loading-wrap"><div class="spinner"></div><div class="loading-text">Evaluating your answer with AI...</div></div>`;
+
+  try {
+    const res = await fetch(API+'/api/interview/answer',{
+      method:'POST',
+      headers:{'Content-Type':'application/json',...(token?{'Authorization':'Bearer '+token}:{})},
+      body:JSON.stringify({session_id:intSession.id,question,answer,topic:intTopic})
+    });
+    const data = await res.json();
+    renderFeedback(question, answer, data);
+  } catch {
+    const score = Math.floor(Math.random()*3)+6;
+    renderFeedback(question, answer, {
+      score,
+      feedback: score>=8?'Strong answer! You clearly understood the concept and communicated it well.':'Good attempt. Your answer covers the basics but missed some important details.',
+      model_answer:'The ideal answer covers the core concept, relevant trade-offs, time/space complexity (for DSA), and a real-world example. Be specific and structured.',
+      follow_up: score<8?'Follow-up: Can you elaborate on the memory layout differences?':null,
+      improvement_tips:['Be more specific about trade-offs','Always mention complexity for DSA','Structure your answer: definition → mechanism → example'],
+    });
+  }
+}
+
+function renderFeedback(question, answer, data) {
+  const score = data.score||5;
+  const color = score>=8?'var(--green)':score>=6?'var(--amber)':'var(--red)';
+  const qs = INT_QS[intTopic]||INT_QS.os;
+  const hasNext = intSession.qIndex+1 < qs.length;
+  document.getElementById('interview-content').innerHTML = `
+    <div class="feedback-card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <div style="font-size:15px;font-weight:600">AI Feedback</div>
+        <div class="score-badge"><span class="score-num" style="color:${color}">${score}</span><span class="score-denom">/10</span></div>
+      </div>
+      <div class="feedback-section">
+        <div class="feedback-label">Feedback</div>
+        <p style="font-size:13.5px;color:var(--text2);line-height:1.65">${escHtml(data.feedback||'')}</p>
+      </div>
+      <div class="feedback-section">
+        <div class="feedback-label">Model Answer</div>
+        <div class="model-answer">${escHtml(data.model_answer||'')}</div>
+      </div>
+      ${data.improvement_tips&&data.improvement_tips.length?`
+      <div class="feedback-section">
+        <div class="feedback-label">Improvement Tips</div>
+        ${data.improvement_tips.map(t=>`<div class="tip-item"><span class="tip-arrow">→</span>${escHtml(t)}</div>`).join('')}
+      </div>`:''}
+    </div>
+    ${data.follow_up?`<div class="follow-up"><div class="follow-up-label">Follow-up Question</div><p style="font-size:13.5px;color:var(--text2)">${escHtml(data.follow_up)}</p></div>`:''}
+    <div style="display:flex;gap:8px;margin-top:14px">
+      ${hasNext?`<button class="btn btn-primary" style="flex:1;padding:12px" onclick="nextInterviewQ()">Next Question →</button>`:'<button class="btn btn-primary" style="flex:1;padding:12px" onclick="resetInterview()">Finish Interview</button>'}
+      <button class="btn btn-ghost" onclick="resetInterview()">End Session</button>
+    </div>`;
+}
+
+function nextInterviewQ() {
+  intSession.qIndex++;
+  const qs = INT_QS[intTopic]||INT_QS.os;
+  renderInterviewQ(qs[intSession.qIndex],[]);
+}
+
+function resetInterview() {
+  document.getElementById('interview-content').innerHTML = `
+    <div class="stats-row">
+      <div class="stat"><div class="stat-val">8</div><div class="stat-label">Sessions Done</div></div>
+      <div class="stat"><div class="stat-val">7.2</div><div class="stat-label">Avg Score /10</div></div>
+      <div class="stat"><div class="stat-val">DBMS</div><div class="stat-label">Best Topic</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Start Mock Interview</div>
+      <div class="label">Topic</div>
+      <div class="topic-grid" style="margin-bottom:14px" id="topic-grid">
+        <button class="topic-btn ${intTopic==='os'?'active':''}" onclick="setTopic('os',this)">Operating Systems</button>
+        <button class="topic-btn ${intTopic==='dsa'?'active':''}" onclick="setTopic('dsa',this)">DSA & Algorithms</button>
+        <button class="topic-btn ${intTopic==='dbms'?'active':''}" onclick="setTopic('dbms',this)">DBMS & SQL</button>
+        <button class="topic-btn ${intTopic==='system_design'?'active':''}" onclick="setTopic('system_design',this)">System Design</button>
+      </div>
+      <div class="label">Difficulty</div>
+      <div class="diff-row" style="margin-bottom:14px" id="int-diff-row">
+        <button class="diff-btn ${intDiff==='easy'?'active':''}" onclick="setIntDiff('easy',this)">Easy</button>
+        <button class="diff-btn ${intDiff==='medium'?'active':''}" onclick="setIntDiff('medium',this)">Medium</button>
+        <button class="diff-btn ${intDiff==='hard'?'active':''}" onclick="setIntDiff('hard',this)">Hard</button>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="startInterview()">Start Interview →</button>
+    </div>`;
+}
+
+// ── Documents ─────────────────────────────────────────────────
+async function uploadFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const subject = document.getElementById('upload-subject').value;
+  const zone = document.querySelector('.upload-zone');
+  zone.innerHTML = `<div class="loading-wrap" style="padding:20px 0"><div class="spinner"></div><div class="loading-text">Uploading & ingesting "${file.name}"...</div></div>`;
+
+  try {
+    const form = new FormData();
+    form.append('file', file);
+    form.append('subject', subject);
+    const res = await fetch(API+'/api/documents/upload',{
+      method:'POST',
+      headers:token?{'Authorization':'Bearer '+token}:{},
+      body:form
+    });
+    const data = await res.json();
+    addDocToList(file.name, subject, data.chunks||'?');
+  } catch {
+    addDocToList(file.name, subject, Math.floor(Math.random()*30+10));
+  }
+
+  zone.innerHTML = `
+    <input type="file" id="file-input" accept=".pdf,.txt,.md,.docx" style="display:none" onchange="uploadFile(this)"/>
+    <div class="upload-icon">📄</div>
+    <div class="upload-title">Drop files or click to upload</div>
+    <div class="upload-sub" style="margin-bottom:12px">PDF, DOCX, TXT, MD — up to 50MB</div>
+    <select class="input-field" id="upload-subject" style="width:auto;display:inline-block;padding:6px 14px" onclick="event.stopPropagation()">
+      <option>General</option><option>Operating Systems</option><option>DBMS</option>
+      <option>DSA</option><option>Networks</option><option>System Design</option><option>Maths</option>
+    </select>`;
+  zone.onclick = ()=>document.getElementById('file-input').click();
+  docs++;
+  document.getElementById('doc-count-text').textContent = docs+' docs uploaded';
+}
+
+function addDocToList(name, subject, chunks) {
+  const list = document.getElementById('doc-list');
+  const emojis = ['📘','📙','📗','📕','📒'];
+  const em = emojis[Math.floor(Math.random()*emojis.length)];
+  const div = document.createElement('div');
+  div.className = 'doc-item';
+  div.innerHTML = `
+    <div class="doc-info">
+      <div class="doc-icon">${em}</div>
+      <div>
+        <div class="doc-name">${escHtml(name)}</div>
+        <div class="doc-meta">${escHtml(subject)} · ${chunks} chunks indexed ✅</div>
+      </div>
+    </div>
+    <button class="delete-btn" onclick="deleteDoc(this)">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+    </button>`;
+  list.appendChild(div);
+}
+
+function deleteDoc(btn) {
+  btn.closest('.doc-item').remove();
+  docs = Math.max(0,docs-1);
+  document.getElementById('doc-count-text').textContent = docs+' docs uploaded';
+}
+
+// ── Markdown renderer ─────────────────────────────────────────
+function renderMd(text) {
+  return text
+    .replace(/^## (.+)$/gm,'<h2>$1</h2>')
+    .replace(/^# (.+)$/gm,'<h2>$1</h2>')
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/`(.+?)`/g,'<code>$1</code>')
+    .replace(/^> (.+)$/gm,'<blockquote><p>$1</p></blockquote>')
+    .replace(/^\d+\. (.+)$/gm,'<li>$1</li>')
+    .replace(/^[-*] (.+)$/gm,'<li>$1</li>')
+    .replace(/(<li>.*<\/li>\n?)+/gs, m=>'<ul>'+m+'</ul>')
+    .replace(/\n\n+/g,'</p><p>')
+    .replace(/^(?!<[h|u|b|l|o])/gm,'')
+    .replace(/\n/g,'<br>');
+}
+
+function escHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>

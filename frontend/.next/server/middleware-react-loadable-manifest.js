@@ -1,0 +1,1 @@
+self.__REACT_LOADABLE_MANIFEST="{\"pages\\\\index.tsx -> ../StudyBuddyApp\":{\"id\":\"pages\\\\index.tsx -> ../StudyBuddyApp\",\"files\":[\"static/chunks/src_StudyBuddyApp_jsx.js\"]}}"
