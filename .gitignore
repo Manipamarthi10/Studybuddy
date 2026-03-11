@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.venv/
+venv/
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+backend/.env
+frontend/.env.local
+mani_secrets.local
+
+# Logs
+*.log
+pytest_output.txt
+test_results.log
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/
