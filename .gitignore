@@ -1,0 +1,31 @@
+# Environment secrets — NEVER commit these
+.env
+.env.local
+.env.production
+frontend-keys.txt
+backend-keys.txt
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+pytest_output.txt
+
+# Node / Next.js
+node_modules/
+frontend/.next/
+frontend/out/
+frontend/.env.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+run.err
