@@ -72,6 +72,11 @@ def health_check():
     return {"status": "ok", "service": "StudyBuddy AI API"}
 
 
+@app.get("/healthz")
+def health_check_z():
+    return {"status": "ok", "service": "StudyBuddy AI API"}
+
+
 @app.get("/")
 def root():
     return {"message": "StudyBuddy AI API v1.0", "docs": "/docs"}
