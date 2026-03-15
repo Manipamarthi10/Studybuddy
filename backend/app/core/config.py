@@ -40,8 +40,7 @@ class Settings(BaseSettings):
 
     # Runtime behavior
     preload_embedding_model: bool = False
-    embedding_model_name: str = "all-MiniLM-L6-v2"
-    embedding_local_files_only: bool = False
+    embedding_model_name: str = "BAAI/bge-small-en-v1.5"
 
     @property
     def allowed_origins_list(self) -> list[str]:

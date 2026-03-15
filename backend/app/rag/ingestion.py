@@ -11,7 +11,7 @@ from typing import Optional
 
 import fitz  # PyMuPDF
 import docx
-from sentence_transformers import SentenceTransformer
+from fastembed import TextEmbedding
 from supabase import Client
 
 from app.core.config import get_settings
@@ -20,27 +20,14 @@ logger = logging.getLogger(__name__)
 settings = get_settings()
 
 # Lazy-loaded singleton — loaded once on first use
-_embedding_model: Optional[SentenceTransformer] = None
+_embedding_model: Optional[TextEmbedding] = None
 
 
-class EmbeddingModelUnavailableError(RuntimeError):
-    """Raised when the embedding model cannot be loaded in the current environment."""
-
-
-def get_embedding_model() -> SentenceTransformer:
+def get_embedding_model() -> TextEmbedding:
     global _embedding_model
     if _embedding_model is None:
         logger.info("Loading embedding model: %s", settings.embedding_model_name)
-        try:
-            _embedding_model = SentenceTransformer(
-                settings.embedding_model_name,
-                local_files_only=settings.embedding_local_files_only,
-            )
-        except Exception as error:
-            raise EmbeddingModelUnavailableError(
-                "Embedding model could not be loaded. "
-                "Ensure the model is cached locally or allow network access."
-            ) from error
+        _embedding_model = TextEmbedding(settings.embedding_model_name)
         logger.info("Embedding model loaded")
     return _embedding_model
 
@@ -144,22 +131,15 @@ def split_into_chunks(
 # ─── Embeddings ───────────────────────────────────────────────────────────────
 
 def generate_embeddings(texts: list[str]) -> list[list[float]]:
-    """Generate 384-dim embeddings in batches."""
+    """Generate 384-dim embeddings."""
     model = get_embedding_model()
-    # Batch size 64 for memory efficiency
-    batch_size = 64
-    all_embeddings = []
-    for i in range(0, len(texts), batch_size):
-        batch = texts[i : i + batch_size]
-        embeddings = model.encode(batch, normalize_embeddings=True).tolist()
-        all_embeddings.extend(embeddings)
-    return all_embeddings
+    return [emb.tolist() for emb in model.embed(texts)]
 
 
 def generate_query_embedding(query: str) -> list[float]:
     """Generate embedding for a single query string."""
     model = get_embedding_model()
-    return model.encode([query], normalize_embeddings=True)[0].tolist()
+    return next(model.embed([query])).tolist()
 
 
 # ─── Storage ──────────────────────────────────────────────────────────────────
